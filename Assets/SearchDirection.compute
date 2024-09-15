@@ -1,0 +1,49 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+struct Boid
+{
+    float3 position;
+    float3 direction;
+
+    float3 flockHeading;
+    float3 flockCentre;
+    float3 separationHeading;
+    int numFlockmates;
+};
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<Boid> boids;
+int numBoids;
+float viewRadius;
+float avoidRadius;
+
+[numthreads(10, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+   
+    for (int i = 0; i < numBoids; i++)
+    {
+        if (id.x != i)
+        {
+            Boid currentBoid = boids[i];
+            float3 distance = currentBoid.position - boids[id.x].position;
+
+            //Get 
+            float distanceMagnetude = distance.x * distance.x + distance.y * distance.y + distance.z * distance.z;
+            
+            if (distanceMagnetude < viewRadius * viewRadius)
+            {
+                boids[id.x].numFlockmates += 1;
+                boids[id.x].flockHeading += currentBoid.direction;
+                boids[id.x].flockCentre += currentBoid.position;
+
+                if (distanceMagnetude < avoidRadius * avoidRadius)
+                {
+                    boids[id.x].separationHeading -= distance / distanceMagnetude;
+                }
+            }
+        }
+    }
+}
